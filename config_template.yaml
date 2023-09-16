@@ -1,0 +1,5 @@
+server:
+  host: 0.0.0.0 # server ip address
+  port: 8083 # server run port
+  proxy: https://yourdomain.com # proxy host
+

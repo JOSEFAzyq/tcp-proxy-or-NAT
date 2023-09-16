@@ -1,5 +1,0 @@
-server:
-  host: 0.0.0.0 # 服务端地址
-  port: 8083 # 服务端端口
-  proxy: https://apps.dsjkyy.com # 代理host
-

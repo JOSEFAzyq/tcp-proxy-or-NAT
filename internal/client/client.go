@@ -14,7 +14,6 @@ import (
 
 func RunClient() {
 	ConnectServer()
-	//Proxy()
 }
 
 var conn *websocket.Conn
@@ -27,16 +26,7 @@ func ConnectServer() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	//go func() {
-	//	for {
-	//		err := ws.WriteMessage(websocket.BinaryMessage, []byte("ping"))
-	//		if err != nil {
-	//			log.Fatal(err)
-	//		}
-	//		time.Sleep(time.Second * 2)
-	//	}
-	//}()
-
+	fmt.Println("连接 server 成功")
 	for {
 		_, data, err := ws.ReadMessage()
 		if err != nil {
@@ -88,7 +78,11 @@ func Proxy(dump []byte) {
 	}
 	msgJson, _ := json.Marshal(responseMsg)
 	fmt.Println("回写数据给服务端")
-	conn.WriteMessage(websocket.BinaryMessage, msgJson)
+	err = conn.WriteMessage(websocket.BinaryMessage, msgJson)
+	if err != nil {
+		fmt.Println("回写数据给服务端err:" + err.Error())
+		return
+	}
 	return
 
 }
