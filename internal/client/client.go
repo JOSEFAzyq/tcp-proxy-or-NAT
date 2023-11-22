@@ -55,7 +55,11 @@ func Proxy(dump []byte) {
 	}
 
 	fmt.Println("开始转发,拼装请求")
-	req, _ := http.NewRequest(httpRequest.Method, httpRequest.Host+httpRequest.Path, bytes.NewReader(httpRequest.Body))
+	req, err := http.NewRequest(httpRequest.Method, httpRequest.Host+httpRequest.Path, bytes.NewReader(httpRequest.Body))
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 	req.Header = httpRequest.Header
 
 	res, err := http.DefaultClient.Do(req)

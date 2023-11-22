@@ -8,6 +8,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
+	"strings"
 	"tcpproxy/internal"
 	"tcpproxy/internal/myproto"
 	"time"
@@ -27,7 +29,7 @@ func StartServer() {
 	clientRequest = map[string]chan myproto.HttpRequest{}
 	r := gin.Default()
 	r.GET("/connect", handleConnect)
-	r.GET("/proxy/*path", handleProxy)
+	r.Any("/proxy/*path", handleProxy)
 	fmt.Println("启动socket以及tcp服务")
 	err := r.Run("0.0.0.0:" + internal.MyConfig.Server.Port)
 	if err != nil {
@@ -87,13 +89,34 @@ func handleConnect(c *gin.Context) {
 
 func handleProxy(c *gin.Context) {
 	fmt.Println("收到http请求,准备进行tcp转发")
+	path := c.Param("path")
+	var host string
+	if !strings.Contains(path, "http") {
+		// 不含有http,则使用config配置
+		host = internal.MyConfig.Server.Proxy
+	} else {
+		// 含有 http,则解析
+		if strings.HasPrefix(path, "/") {
+			path = path[1:]
+		}
+		u, err := url.Parse(path)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		path = u.Path
+		host = u.Scheme + "://" + u.Host
+
+	}
+	fmt.Println("Host:", host)
+	fmt.Println("Path:", path)
 	r := c.Request
 	bodyBytes, _ := io.ReadAll(r.Body)
 	httpRequest := &myproto.HttpRequest{
 		ReqId:  time.Now().String(),
 		Method: r.Method,
-		Path:   c.Param("path"),
-		Host:   internal.MyConfig.Server.Proxy,
+		Path:   path,
+		Host:   host,
 		Header: r.Header,
 		Body:   bodyBytes,
 	}
@@ -111,11 +134,15 @@ func handleProxy(c *gin.Context) {
 		fmt.Println(err.Error())
 		return
 	}
-	fmt.Println("向客户端发送tcp消息")
+	fmt.Println("向客户端发送tcp消息", string(msgJson))
+	if ClientConn == nil {
+		fmt.Println("客户端未连接")
+		return
+	}
 	err = ClientConn.WriteMessage(websocket.BinaryMessage, msgJson)
 
 	if err != nil {
-		fmt.Println("发送成功", err.Error())
+		fmt.Println("发送失败", err.Error())
 		return
 	}
 	fmt.Println("发送成功")
